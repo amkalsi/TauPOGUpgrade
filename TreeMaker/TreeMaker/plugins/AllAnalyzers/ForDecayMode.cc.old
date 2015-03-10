@@ -1,0 +1,212 @@
+#include "./ForDecayMode.h"                                                                                                                                        
+#include "DataFormats/TrackReco/interface/HitPattern.h"
+#include "SimDataFormats/GeneratorProducts/interface/HepMCProduct.h"
+
+ForDecayMode::ForDecayMode(std::string prefix,edm::Service<TFileService> fs,const edm::ParameterSet& iConfig)
+{
+  
+  //now do what ever initialization is needed
+  _MatchLeptonToGen = iConfig.getParameter<bool>("MatchLeptonToGen");                                                                                        
+  _UseLeptonMotherId = iConfig.getParameter<bool>("UseLeptonMotherId");
+  _UseLeptonGrandMotherId = iConfig.getParameter<bool>("UseLeptonGrandMotherId");
+  _LeptonMotherId = iConfig.getParameter<int>("LeptonMotherId");
+  _LeptonGrandMotherId = iConfig.getParameter<int>("LeptonGrandMotherId");
+  _MatchTauToGen = iConfig.getParameter<bool>("MatchTauToGen");
+  _UseTauMotherId = iConfig.getParameter<bool>("UseTauMotherId");
+  _UseTauGrandMotherId = iConfig.getParameter<bool>("UseTauGrandMotherId");
+  _TauMotherId = iConfig.getParameter<int>("TauMotherId");
+  _TauGrandMotherId = iConfig.getParameter<int>("TauGrandMotherId");
+  _TauToGenMatchingDeltaR = iConfig.getParameter<double>("TauToGenMatchingDeltaR");
+
+  //h_RPC_FourthStation_etag1p2 = fs->make<TH1F>(("h_RPC_FourthStation_etag1p2"+prefix).c_str() ,"h_RPC_FourthStation_etag1p2",15,0,15);
+
+  h_PfTau_pT_den = fs->make<TH1F>(("h_PfTau_pT_den"+prefix).c_str() ,"h_PfTau_pT_den",100,0,700);
+  h_PfTau_Eta_den = fs->make<TH1F>(("h_PfTau_Eta_den"+prefix).c_str() ,"h_PfTau_Eta_den",100,-5,5);
+  h_PfTau_Phi_den = fs->make<TH1F>(("h_PfTau_Phi_den"+prefix).c_str() ,"h_PfTau_Phi_den",100,-5,5);
+  h_genMuon_pT_den = fs->make<TH1F>(("h_genMuon_pT_den"+prefix).c_str() ,"h_genMuon_pT_den",100,0,700);
+  h_genMuon_Eta_den = fs->make<TH1F>(("h_genMuon_Eta_den"+prefix).c_str() ,"h_genMuon_Eta_den",100,-5,5);
+  h_genMuon_Phi_den = fs->make<TH1F>(("h_genMuon_Phi_den"+prefix).c_str() ,"h_genMuon_Phi_den",100,-5,5); 
+
+  h_PfTau_pT_num = fs->make<TH1F>(("h_PfTau_pT_num"+prefix).c_str() ,"h_PfTau_pT_num",100,0,700);
+  h_PfTau_Eta_num = fs->make<TH1F>(("h_PfTau_Eta_num"+prefix).c_str() ,"h_PfTau_Eta_num",100,-5,5);
+  h_PfTau_Phi_num = fs->make<TH1F>(("h_PfTau_Phi_num"+prefix).c_str() ,"h_PfTau_Phi_num",100,-5,5);
+  h_genMuon_pT_num = fs->make<TH1F>(("h_genMuon_pT_num"+prefix).c_str() ,"h_genMuon_pT_num",100,0,700);
+  h_genMuon_Eta_num = fs->make<TH1F>(("h_genMuon_Eta_num"+prefix).c_str() ,"h_genMuon_Eta_num",100,-5,5); 
+  h_genMuon_Phi_num = fs->make<TH1F>(("h_genMuon_Phi_num"+prefix).c_str() ,"h_genMuon_Phi_num",100,-5,5); 
+ 
+
+  h_PfTau_pT_num_tight = fs->make<TH1F>(("h_PfTau_pT_num_tight"+prefix).c_str() ,"h_PfTau_pT_num_tight",100,0,700);
+  h_PfTau_Eta_num_tight = fs->make<TH1F>(("h_PfTau_Eta_num_tight"+prefix).c_str() ,"h_PfTau_Eta_num_tight",100,-5,5);
+  h_PfTau_Phi_num_tight = fs->make<TH1F>(("h_PfTau_Phi_num_tight"+prefix).c_str() ,"h_PfTau_Phi_num_tight",100,-5,5);
+  h_genMuon_pT_num_tight = fs->make<TH1F>(("h_genMuon_pT_num_tight"+prefix).c_str() ,"h_genMuon_pT_num_tight",100,0,700);
+  h_genMuon_Eta_num_tight = fs->make<TH1F>(("h_genMuon_Eta_num_tight"+prefix).c_str() ,"h_genMuon_Eta_num_tight",100,-5,5); 
+  h_genMuon_Phi_num_tight = fs->make<TH1F>(("h_genMuon_Phi_num_tight"+prefix).c_str() ,"h_genMuon_Phi_num_tight",100,-5,5); 
+  
+}
+
+
+ForDecayMode::~ForDecayMode()
+{
+  
+  // do anything here that needs to be done at desctruction time
+  // (e.g. close files, deallocate resources etc.)
+  
+}
+
+
+//
+// member functions
+//
+
+// ------------ method called for each event  ------------
+void ForDecayMode::Fill(const edm::Event& iEvent , const edm::EventSetup& iSetup) {
+  using namespace edm;
+  using namespace std;
+  using namespace reco;
+  using namespace pat;
+  
+  iEvent.getByLabel("genParticles", _genParticles); 
+  
+  Handle< reco::TrackCollection > track;
+  iEvent.getByLabel("generalTracks", track);
+  
+  Handle< reco::GenJetCollection > genTauJets;
+  iEvent.getByLabel("tauGenJets",genTauJets);
+  
+  edm::Handle<pat::JetCollection> pfjet;
+  iEvent.getByLabel("selectedPatJets", pfjet);
+  
+  edm::Handle<std::vector< PileupSummaryInfo > >  PupInfo;
+  iEvent.getByLabel(std::string("addPileupInfo"), PupInfo);
+  
+  edm::Handle<reco::MuonCollection> rmuons;
+  iEvent.getByLabel("muons",rmuons);
+  
+  edm::Handle<reco::VertexCollection> vC;
+  iEvent.getByLabel("offlinePrimaryVertices",vC);
+  //  vector<pat::Muon>                    "patMuons"                  ""           "PATTuple"  
+ 
+// edm::HepMCProduct                  "generator"                 ""           "SIM"        
+   edm::Handle<edm::HepMCProduct> hepMC;
+   iEvent.getByLabel("generator",hepMC);
+
+  iEvent.getByLabel("ak5GenJets", _genJets);
+  
+  
+  iEvent.getByLabel("hpsPFTauProducer",_hpsTaucoll);
+  //decay Mode
+   iEvent.getByLabel("hpsPFTauDiscriminationByDecayModeFinding",_dmf);
+  //Muon Veto
+
+   //Muon 2 working pint
+   iEvent.getByLabel("hpsPFTauDiscriminationByLooseMuonRejection2",_mv1);
+   iEvent.getByLabel("hpsPFTauDiscriminationByMediumMuonRejection2",_mv2);
+   iEvent.getByLabel("hpsPFTauDiscriminationByTightMuonRejection2",_mv3);
+   
+   // Muon 3 working points
+
+   iEvent.getByLabel("hpsPFTauDiscriminationByLooseMuonRejection3",_mv31);
+   iEvent.getByLabel("hpsPFTauDiscriminationByTightMuonRejection3",_mv32);
+
+   //Electron Veto
+
+   iEvent.getByLabel("hpsPFTauDiscriminationByMVA3LooseElectronRejection",_ev1);
+   iEvent.getByLabel("hpsPFTauDiscriminationByMVA3MediumElectronRejection",_ev2);
+   iEvent.getByLabel("hpsPFTauDiscriminationByMVA3TightElectronRejection",_ev3);
+   
+   // Isolation Working points
+   
+   iEvent.getByLabel("hpsPFTauDiscriminationByLooseCombinedIsolationDBSumPtCorr",_iso1);
+   iEvent.getByLabel("hpsPFTauDiscriminationByMediumCombinedIsolationDBSumPtCorr",_iso2);
+   iEvent.getByLabel("hpsPFTauDiscriminationByTightCombinedIsolationDBSumPtCorr",_iso3);
+   
+   iEvent.getByLabel("hpsPFTauDiscriminationByLooseCombinedIsolationDBSumPtCorr3Hits",_iso4);
+   iEvent.getByLabel("hpsPFTauDiscriminationByMediumCombinedIsolationDBSumPtCorr3Hits",_iso5);
+   iEvent.getByLabel("hpsPFTauDiscriminationByTightCombinedIsolationDBSumPtCorr3Hits",_iso6);
+  
+  
+   iEvent.getByLabel("hpsPFTauDiscriminationByVLooseChargedIsolation",_hpsTau);
+   
+   iEvent.getByLabel("hpsPFTauDiscriminationByLooseChargedIsolation",_hpsTau1);
+   
+   iEvent.getByLabel("hpsPFTauDiscriminationByMediumChargedIsolation",_hpsTau2);
+   iEvent.getByLabel("hpsPFTauDiscriminationByTightChargedIsolation",_hpsTau3);
+   
+   
+  iEvent.getByLabel("hpsPFTauDiscriminationByRawChargedIsolationDBSumPtCorr",_rawCharged);
+
+// Get Event
+
+   const HepMC::GenEvent* Evt = hepMC->GetEvent();
+  
+//    HepMC::GenVertex* highestpT = 0;
+
+ 
+  reco::VertexCollection::const_iterator leadVTX;
+
+  double sumpTMAX = -9999;
+  for(reco::VertexCollection::const_iterator vtx=vC->begin(); vtx!= vC->end(); ++vtx) {
+
+   double sumpT = 0;
+     for(reco::Vertex::trackRef_iterator itk = vtx->tracks_begin();itk != vtx->tracks_end(); ++itk) {
+          sumpT = sumpT + ((*itk)->pt())*((*itk)->pt());
+        }
+     if(sumpT > sumpTMAX) {
+       sumpTMAX = sumpT;
+       leadVTX = vtx;
+       }
+   }
+   
+  
+for(HepMC::GenEvent::vertex_const_iterator vit= Evt->vertices_begin(); vit != Evt->vertices_end(); vit++) { 
+   
+    for(HepMC::GenVertex::particles_out_const_iterator pout = (*vit)->particles_out_const_begin(); pout != (*vit)->particles_out_const_end(); pout++) { 
+ 
+     if((fabs((*pout)->pdg_id()) == 15 ) && ((*pout)->status() ! = 3)) {
+
+ cout<<"got taus"<<endl;                                  
+}
+}
+}
+HepMC::FourVector TauMom;
+//HepMC::GenEvent::particle_const_iterator p;
+for(HepMC::GenEvent::particle_const_iterator p=Evt->particles_begin(); p!=Evt->particles_end();p++) {
+if((fabs((*p)->pdg_id()) == 15))  {
+int neutrinos = 0;
+TauMom = HepMC::FourVector((*p)->momentum().px(), (*p)->momentum().py(), (*p)->momentum().py(),(*p)->momentum().e());
+
+}
+}
+
+
+
+
+
+
+
+
+
+  double maxhighpt = -9999;
+  reco::GenJetCollection::const_iterator maxtaujet ;
+
+ for(reco::GenJetCollection::const_iterator gentaujet = genTauJets->begin(); gentaujet !=  genTauJets->end(); ++gentaujet) {
+   
+   std::string tauGenJetDecayMode = JetMCTagUtils::genTauDecayMode(*gentaujet);
+   
+  if(tauGenJetDecayMode=="muon") continue;
+  if(tauGenJetDecayMode=="electron") continue;
+
+    if(gentaujet->pt() > maxhighpt) {
+      maxhighpt = gentaujet->pt();
+      maxtaujet = gentaujet;
+     }
+ 
+   } 
+
+for(reco::VertexCollection::const_iterator vtx=vC->begin(); vtx!= vC->end(); ++vtx) {
+    
+     //cout<<maxtaujet->genVertex.z();
+
+}
+
+}

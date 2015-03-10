@@ -1,0 +1,252 @@
+// -*- C++ -*-
+//
+// Package:    TreeMaker
+// Class:      TreeMaker
+// 
+/**\class TreeMaker TreeMaker.cc TauIDChecks/TreeMaker/plugins/TreeMaker.cc
+
+ Description: [one line class summary]
+
+ Implementation:
+     [Notes on implementation]
+*/
+//
+// Original Author:  kaur amandeepkalsi
+//         Created:  Fri, 25 Oct 2013 15:07:16 GMT
+// $Id$
+//
+//
+
+
+// system include files
+#include "./TreeMaker.h"
+//
+// class declaration
+//
+
+class TreeMaker : public edm::EDAnalyzer {
+   public:
+      explicit TreeMaker(const edm::ParameterSet&);
+      ~TreeMaker();
+
+      static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+
+/*      TauIDChecks *tauidchecks;
+    TauIDChecksG2p3 *tauidchecksG2p3;
+     TauIDChecksU4p0 *tauidchecksU4p0;
+
+      TauIDChecks_newDM  *tauidchecks_newDM;
+      TauIDChecks_newDMG2p3 *tauidchecks_newDMG2p3; 
+      TauIDChecks_newDMU4p0 *tauidchecks_newDMU4p0; 
+    
+*/
+      JetTauFakeRate *fakerate;
+      JetTauFakeRateG2p3 *fakerateG2p3;
+      JetTauFakeRateU4p0 *fakerateU4p0;
+/*
+      ETauFakeRate   *eFake;
+      ETauFakeRateG2p3   *eFakeG2p3;
+      ETauFakeRateU4p0   *eFakeU4p0;
+    
+
+   
+      MuTauFakeRate  *muFake;
+      MuTauFakeRateG2p3  *muFakeG2p3;
+      MuTauFakeRateU4p0  *muFakeU4p0;
+*/
+    private:
+      virtual void beginJob() ;
+      virtual void analyze(const edm::Event&, const edm::EventSetup&) ;
+      virtual void endJob() ;
+
+      //virtual void beginRun(edm::Run const&, edm::EventSetup const&) ;
+      //virtual void endRun(edm::Run const&, edm::EventSetup const&) ;
+      //virtual void beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) ;
+      //virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) ;
+
+      // ----------member data ---------------------------
+};
+
+//
+// constants, enums and typedefs
+//
+
+//
+// static data member definitions
+//
+
+//
+// constructors and destructor
+//
+TreeMaker::TreeMaker(const edm::ParameterSet& iConfig)
+
+{
+   //now do what ever initialization is needed
+edm::Service<TFileService> fs;
+/* if(true) tauidchecks = new TauIDChecks ("tauChecks",fs,iConfig);
+ if(true) tauidchecksG2p3 = new TauIDChecksG2p3("tauChecksEtaG2P3",fs,iConfig);
+ if(true) tauidchecksU4p0 = new TauIDChecksU4p0("tauChecksEtaU4P0",fs,iConfig);
+
+
+ if(true) tauidchecks_newDM = new TauIDChecks_newDM ("NewDM",fs,iConfig);
+ if(true) tauidchecks_newDMG2p3 = new TauIDChecks_newDMG2p3 ("NewDMG2p3",fs,iConfig);
+ if(true) tauidchecks_newDMU4p0 = new TauIDChecks_newDMU4p0 ("NewDMU4p0",fs,iConfig);
+*/
+if(true) fakerate = new JetTauFakeRate("fakerate",fs,iConfig);
+if(true) fakerateG2p3 = new JetTauFakeRateG2p3("fakerateG2p3",fs,iConfig);
+if(true) fakerateU4p0 = new JetTauFakeRateU4p0("fakerateU4p0",fs,iConfig);
+/*
+if(true)  muFake = new MuTauFakeRate("MuTauFR",fs,iConfig);
+if(true)  muFakeG2p3 = new MuTauFakeRateG2p3("MuTauFRG2p3",fs,iConfig);
+if(true)  muFakeU4p0 = new MuTauFakeRateU4p0("MuTauFRU4p0",fs,iConfig);
+
+
+if(true)  eFake = new ETauFakeRate("ETauFR",fs,iConfig); 
+if(true)  eFakeG2p3 = new ETauFakeRateG2p3("ETauFRG2p3",fs,iConfig);
+if(true)  eFakeU4p0 = new ETauFakeRateU4p0("ETauFRU4p0",fs,iConfig);
+*/
+
+
+
+}
+
+
+TreeMaker::~TreeMaker()
+{
+ 
+   // do anything here that needs to be done at desctruction time
+   // (e.g. close files, deallocate resources etc.)
+
+}
+
+
+//
+// member functions
+//
+
+// ------------ method called for each event  ------------
+void
+TreeMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
+{
+   using namespace edm;
+
+/*bool fillefficiency = true;
+bool fillefficiencyG2p3 =  true;
+bool fillefficiencyU4p0 =  true; 
+
+bool fillefficiency_newDM = true;
+bool fillefficiency_newDMG2p3 =  true;
+bool fillefficiency_newDMU4p0 =  true;
+*/
+bool fillfakerate=true;
+bool fillfakerateG2p3 =  true;
+bool fillfakerateU4p0 =  true;
+/*
+bool fillmuTaufr = true;
+bool fillmuTaufrG2p3 = true;
+bool fillmuTaufrU4p0 = true;
+
+
+bool filleTaufr=true;
+bool filleTaufrG2p3=true;
+bool filleTaufrU4p0=true;
+
+
+
+
+if(fillefficiency)      tauidchecks->Fill(iEvent);
+if(fillefficiencyG2p3)  tauidchecksG2p3->Fill(iEvent);
+
+if(fillefficiencyU4p0)  tauidchecksU4p0->Fill(iEvent);
+
+
+if(fillefficiency_newDM)      tauidchecks_newDM->Fill(iEvent);
+if(fillefficiency_newDMG2p3)  tauidchecks_newDMG2p3->Fill(iEvent);
+if(fillefficiency_newDMU4p0)  tauidchecks_newDMU4p0->Fill(iEvent);
+
+*/
+if(fillfakerate)        fakerate->Fill(iEvent, iSetup);
+if(fillfakerateG2p3)    fakerateG2p3->Fill(iEvent, iSetup);
+if(fillfakerateU4p0)    fakerateU4p0->Fill(iEvent, iSetup);
+
+/*
+if(fillmuTaufr) muFake->Fill(iEvent); 
+if(fillmuTaufrG2p3) muFakeG2p3->Fill(iEvent);
+if(fillmuTaufrU4p0) muFakeU4p0->Fill(iEvent);
+
+
+if(filleTaufr)  eFake->Fill(iEvent);
+if(filleTaufrG2p3)  eFakeG2p3->Fill(iEvent);
+if(filleTaufrU4p0)  eFakeU4p0->Fill(iEvent);
+*/
+
+
+
+#ifdef THIS_IS_AN_EVENT_EXAMPLE
+   Handle<ExampleData> pIn;
+   iEvent.getByLabel("example",pIn);
+#endif
+   
+#ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
+   ESHandle<SetupData> pSetup;
+   iSetup.get<SetupRecord>().get(pSetup);
+#endif
+}
+
+
+// ------------ method called once each job just before starting event loop  ------------
+void 
+TreeMaker::beginJob()
+{
+}
+
+// ------------ method called once each job just after ending the event loop  ------------
+void 
+TreeMaker::endJob() 
+{
+}
+
+// ------------ method called when starting to processes a run  ------------
+/*
+void 
+TreeMaker::beginRun(edm::Run const&, edm::EventSetup const&)
+{
+}
+*/
+
+// ------------ method called when ending the processing of a run  ------------
+/*
+void 
+TreeMaker::endRun(edm::Run const&, edm::EventSetup const&)
+{
+}
+*/
+
+// ------------ method called when starting to processes a luminosity block  ------------
+/*
+void 
+TreeMaker::beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&)
+{
+}
+*/
+
+// ------------ method called when ending the processing of a luminosity block  ------------
+/*
+void 
+TreeMaker::endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&)
+{
+}
+*/
+
+// ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
+void
+TreeMaker::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+  //The following says we do not know what parameters are allowed so do no validation
+  // Please change this to state exactly what you do use, even if it is no parameters
+  edm::ParameterSetDescription desc;
+  desc.setUnknown();
+  descriptions.addDefault(desc);
+}
+
+//define this as a plug-in
+DEFINE_FWK_MODULE(TreeMaker);

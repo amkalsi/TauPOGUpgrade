@@ -1,0 +1,290 @@
+
+
+
+#include "./DetectorInfo.h"                                                                                                                                        
+  
+
+DetectorInfo::DetectorInfo(std::string prefix,edm::Service<TFileService> fs,const edm::ParameterSet& iConfig)
+ {
+
+   //now do what ever initialization is needed
+  _MatchLeptonToGen = iConfig.getParameter<bool>("MatchLeptonToGen");                                                                                        
+  _UseLeptonMotherId = iConfig.getParameter<bool>("UseLeptonMotherId");
+  _UseLeptonGrandMotherId = iConfig.getParameter<bool>("UseLeptonGrandMotherId");
+  _LeptonMotherId = iConfig.getParameter<int>("LeptonMotherId");
+  _LeptonGrandMotherId = iConfig.getParameter<int>("LeptonGrandMotherId");
+  _MatchTauToGen = iConfig.getParameter<bool>("MatchTauToGen");
+  _UseTauMotherId = iConfig.getParameter<bool>("UseTauMotherId");
+  _UseTauGrandMotherId = iConfig.getParameter<bool>("UseTauGrandMotherId");
+  _TauMotherId = iConfig.getParameter<int>("TauMotherId");
+  _TauGrandMotherId = iConfig.getParameter<int>("TauGrandMotherId");
+  _TauToGenMatchingDeltaR = iConfig.getParameter<double>("TauToGenMatchingDeltaR");
+
+
+
+  h_gen_pt_pure= fs->make<TH1F>(("h_gen_pt_pure"+prefix).c_str() ,"h_gen_pt_pure",200,0,1400);
+  h_gen_eta_pure = fs->make<TH1F>(("h_gen_eta_pure"+prefix).c_str() ,"h_gen_eta_pure",100,-5,5);
+  h_gen_phi_pure = fs->make<TH1F>(("h_gen_phi_pure"+prefix).c_str() ,"h_gen_phi_pure",100,-5,5);
+  
+  
+  h_pfjet_pt_pure = fs->make<TH1F>(("h_pfjet_pt_pure"+prefix).c_str() ,"h_pfjet_pt_pure",200,0,1400);
+  h_pfjet_eta_pure = fs->make<TH1F>(("h_pfjet_eta_pure"+prefix).c_str() ,"h_pfjet_eta_pure",100,-5,5);
+  h_pfjet_phi_pure = fs->make<TH1F>(("h_pfjet_phi_pure"+prefix).c_str() ,"h_pfjet_phi_pure",100,-5,5);
+  
+  Fill_gentauEta = fs->make<TH1F>(("Fill_gentauEta"+prefix).c_str() ,"Fill_gentauEta",100,-5,5);
+  Fill_RecotauEta = fs->make<TH1F>(("Fill_RecotauEta"+prefix).c_str() ,"Fill_RecotauEta",100,-5,5);
+
+ h_EcalEt = fs->make<TH1F>(("h_EcalEt"+prefix).c_str() ,"h_EcalEt",1000,0,1000); 
+ 
+ h_EcalEta = fs->make<TH1F>(("h_EcalEta"+prefix).c_str() ,"h_EcalEta",100,-5,5);
+ h_EcalPhi = fs->make<TH1F>(("h_EcalPhi"+prefix).c_str() ,"h_EcalPhi",100,-5,5);
+
+h_EcalEtaVsEt = fs->make<TProfile>(("h_EcalEtaVsEt"+prefix).c_str() ,"h_EcalEtaVsEt",100,-5,5,0,1000);
+
+h_EcalEtaVsEt2D= fs->make<TH2D> (("h_EcalEtaVsEt2D"+prefix).c_str() ,"h_EcalEtaVsEt2D",100,-5,5,1000,0,1000);
+
+h_HcalEt = fs->make<TH1F>(("h_HcalEt"+prefix).c_str() ,"h_HcalEt",1000,0,1000);
+h_HcalEta = fs->make<TH1F>(("h_HcalEta"+prefix).c_str() ,"h_HcalEta",100,-5,5);
+h_HcalPhi = fs->make<TH1F>(("h_HcalPhi"+prefix).c_str() ,"h_HcalPhi",100,-5,5);
+
+
+h_HcalEtaVsEt = fs->make<TProfile>(("h_HcalEtaVsEt"+prefix).c_str() ,"h_HcalEta
+VsEt",100,-5,5,0,1000);
+
+h_HcalEtaVsEt2D= fs->make<TH2D> (("h_HcalEtaVsEt2D"+prefix).c_str() ,"h_HcalEta
+VsEt2D",100,-5,5,1000,0,1000);
+
+
+
+}
+
+
+DetectorInfo::~DetectorInfo()
+{
+ 
+   // do anything here that needs to be done at desctruction time
+   // (e.g. close files, deallocate resources etc.)
+
+}
+
+
+//
+// member functions
+//
+
+// ------------ method called for each event  ------------
+void DetectorInfo::Fill(const edm::Event& iEvent) {
+   using namespace edm;
+   using namespace std;
+   using namespace reco;
+   using namespace pat;
+
+  iEvent.getByLabel("genParticles", _genParticles); 
+   
+  
+  Handle< reco::TrackCollection > track;
+  iEvent.getByLabel("generalTracks", track);
+
+  Handle< reco::GenJetCollection > genTauJets;
+  iEvent.getByLabel("tauGenJets",genTauJets);
+
+
+  edm::Handle<std::vector< PileupSummaryInfo > >  PupInfo;
+  iEvent.getByLabel(std::string("addPileupInfo"), PupInfo);
+
+    edm::Handle<reco::MuonCollection> rmuons;
+    iEvent.getByLabel("muons",rmuons);
+
+    edm::Handle<reco::VertexCollection> vtx;
+   iEvent.getByLabel("offlinePrimaryVertices",vtx);
+  
+ 
+//  vector<pat::Muon>                    "patMuons"                  ""           "PATTuple"  
+ std::vector<PileupSummaryInfo>::const_iterator PVI;
+
+
+      edm::Handle<reco::PFJetCollection>  pfjets;
+   iEvent.getByLabel("ak5PFJets", pfjets);
+
+  iEvent.getByLabel("ak5GenJets", _genJets);
+  
+
+  iEvent.getByLabel("hpsPFTauProducer",_hpsTaucoll);
+  //decay Mode
+   iEvent.getByLabel("hpsPFTauDiscriminationByDecayModeFinding",_dmf);
+  //Muon Veto
+
+  Handle<CaloTowerCollection> caloTowers;
+   iEvent.getByLabel( "towerMaker", caloTowers );
+ 
+   //Muon 2 working pint
+   iEvent.getByLabel("hpsPFTauDiscriminationByLooseMuonRejection2",_mv1);
+   iEvent.getByLabel("hpsPFTauDiscriminationByMediumMuonRejection2",_mv2);
+   iEvent.getByLabel("hpsPFTauDiscriminationByTightMuonRejection2",_mv3);
+   
+   // Muon 3 working points
+
+   iEvent.getByLabel("hpsPFTauDiscriminationByLooseMuonRejection3",_mv31);
+   iEvent.getByLabel("hpsPFTauDiscriminationByTightMuonRejection3",_mv32);
+
+   //Electron Veto
+
+   iEvent.getByLabel("hpsPFTauDiscriminationByMVA5LooseElectronRejection",_ev1);
+   iEvent.getByLabel("hpsPFTauDiscriminationByMVA5MediumElectronRejection",_ev2);
+   iEvent.getByLabel("hpsPFTauDiscriminationByMVA5TightElectronRejection",_ev3);
+   
+   // Isolation Working points
+   
+   iEvent.getByLabel("hpsPFTauDiscriminationByLooseCombinedIsolationDBSumPtCorr",_iso1);
+   iEvent.getByLabel("hpsPFTauDiscriminationByMediumCombinedIsolationDBSumPtCorr",_iso2);
+   iEvent.getByLabel("hpsPFTauDiscriminationByTightCombinedIsolationDBSumPtCorr",_iso3);
+   
+   iEvent.getByLabel("hpsPFTauDiscriminationByLooseCombinedIsolationDBSumPtCorr3Hits",_iso4);
+   iEvent.getByLabel("hpsPFTauDiscriminationByMediumCombinedIsolationDBSumPtCorr3Hits",_iso5);
+   iEvent.getByLabel("hpsPFTauDiscriminationByTightCombinedIsolationDBSumPtCorr3Hits",_iso6);
+   
+   iEvent.getByLabel("hpsPFTauDiscriminationByVLooseChargedIsolation",_hpsTau);
+   iEvent.getByLabel("hpsPFTauDiscriminationByLooseChargedIsolation",_hpsTau1);
+   iEvent.getByLabel("hpsPFTauDiscriminationByMediumChargedIsolation",_hpsTau2);
+   iEvent.getByLabel("hpsPFTauDiscriminationByTightChargedIsolation",_hpsTau3);
+   iEvent.getByLabel("hpsPFTauDiscriminationByRawChargedIsolationDBSumPtCorr",_rawCharged);
+   iEvent.getByLabel("hpsPFTauMVA3IsolationNeutralIsoPtSumWeight1",_nw1);
+   iEvent.getByLabel("hpsPFTauMVA3IsolationNeutralIsoPtSumWeight2",_nw2);
+   iEvent.getByLabel("hpsPFTauMVA3IsolationNeutralIsoPtSumWeight1NQ",_nw1nq);
+
+   iEvent.getByLabel("hpsPFTauMVA3IsolationNeutralIsoPtSumWeight2NQ",_nw2nq);
+   iEvent.getByLabel("hpsPFTauMVA3IsolationNeutralHadronIsoPtSum",_h1);
+   iEvent.getByLabel("hpsPFTauMVA3IsolationNeutralHadronIsoPtSumWeight1",_hw1);
+   iEvent.getByLabel("hpsPFTauMVA3IsolationNeutralHadronIsoPtSumWeight2",_hw2);
+   iEvent.getByLabel("hpsPFTauMVA3IsolationNeutralHadronIsoPtSumWeight1NQ",_hw1nq);
+   iEvent.getByLabel("hpsPFTauMVA3IsolationNeutralHadronIsoPtSumWeight2NQ",_hw2nq);
+   
+   iEvent.getByLabel("hpsPFTauMVA3IsolationChargedIsoPtSum",_rawc);
+
+   iEvent.getByLabel("hpsPFTauMVA3IsolationNeutralIsoPtSum",_rawn);
+
+   iEvent.getByLabel("hpsPFTauMVA3IsolationPUcorrPtSum",_rawpu);
+
+   iEvent.getByLabel("hpsPFTauDiscriminationByLooseCombinedIsolationRhoSumPtCorr3Hits",rho1);
+   iEvent.getByLabel("hpsPFTauDiscriminationByMediumCombinedIsolationRhoSumPtCorr3Hits",rho2);
+   iEvent.getByLabel("hpsPFTauDiscriminationByTightCombinedIsolationRhoSumPtCorr3Hits",rho3);   
+   
+
+
+   
+   int  nGoodVtx = 0;
+   for( reco::VertexCollection::const_iterator vtxIt = vtx->begin(); vtxIt != vtx->end(); ++vtxIt){
+     
+     if((vtxIt->isValid()) && !(vtxIt->isFake())) {
+       
+       nGoodVtx++;
+     }
+   }
+   
+     for (reco::GenJetCollection::const_iterator jet1 = _genJets->begin(); jet1 != _genJets->end(); ++jet1) {
+
+      h_gen_pt_pure->Fill(jet1->pt());
+      h_gen_eta_pure->Fill(jet1->eta());
+     h_gen_phi_pure->Fill(jet1->phi());
+
+}
+
+
+for (reco::PFJetCollection::const_iterator jet2 = pfjets->begin(); jet2 != pfjets->end(); ++jet2) {
+
+      h_pfjet_pt_pure->Fill(jet2->pt());
+      h_pfjet_eta_pure->Fill(jet2->eta());
+      h_pfjet_phi_pure->Fill(jet2->phi());
+
+}
+
+//energy for ECAL from CaloTriggers
+
+for(CaloTowerCollection::const_iterator calE = caloTowers->begin(); calE != caloTowers->end(); ++calE) {
+    
+      h_EcalEt->Fill(calE->emEt());
+      h_EcalEta->Fill(calE->eta());
+      h_EcalPhi->Fill(calE->phi());
+      h_EcalEtaVsEt->Fill(calE->eta(), calE->emEt());
+      h_EcalEtaVsEt2D->Fill(calE->eta(), calE->emEt());
+      h_EcalPhiVsEt->Fill(calE->phi(), calE->emEt());
+      h_EcalPhiVsEt2D->Fill(calE->phi(), calE->emEt());
+ 
+
+}
+
+
+for(CaloTowerCollection::const_iterator calH = caloTowers->begin(); calH != caloTowers->end(); ++calH) {
+    
+       h_HcalEt->Fill(calH->hadEt());
+       h_HcalEta->Fill(calH->eta());
+       h_HcalPhi->Fill(calH->phi());
+       h_HcalEtaVsEt->Fill(calH->eta(), calH->hadEt());
+       h_HcalEtaVsEt2D->Fill(calH->eta(), calH->hadEt());
+       h_HcalPhiVsEt->Fill(calH->phi(), calH->hadEt());
+       h_HcalPhiVsEt2D->Fill(calH->phi(), calH->hadEt());
+  
+ 
+ }
+
+for(CaloTowerCollection::const_iterator calHO = caloTowers->begin(); calHO != caloTowers->end(); ++calHO) {
+     
+        h_HOEt->Fill(calHO->outerEt());
+        h_HOEta->Fill(calHO->eta());
+        h_HOPhi->Fill(calHO->phi());
+        h_HOEtaVsEt->Fill(calHO->eta(), calHO->outerEt());
+        h_HOEtaVsEt2D->Fill(calHO->eta(), calHO->outerEt());
+        h_HOPhiVsEt->Fill(calHO->phi(), calHO->outerEt());
+        h_HOlPhiVsEt2D->Fill(calHO->phi(), calHO->outerEt());
+   
+  
+}
+
+for(reco::TrackCollection::const_iterator trk = track->begin(); trk !=  track->end() ; ++trk) {
+
+    h_TrackPt->Fill(trk->pt());
+    h_TrackEta->Fill(trk->eta());
+    h_TrackPhi->Fill(trk->phi());
+    h_TrackEtaVsPt->Fill(trk->eta() , trk->pt());
+    h_TrackEtaVsPt2D->Fill(trk->eta() , trk->pt());
+    h_TrackPhiVsPt->Fill(trk->phi() , trk->pt());
+    h_TrackPhiVsPt2D->Fill(trk->phi() , trk->pt());
+}
+
+
+for(reco::MuonCollection::const_iterator mu = rmuons->begin(); mu != rmuons->end() ; ++mu){
+
+   if(mu->isStandAloneMuon()) {
+ 
+   h_StandAloneMuonPt->Fill(mu->pt());
+   h_StandAloneMuonEta->Fill(mu->eta());
+   h_StandAloneMuonPhi->Fill(mu->phi());
+
+   h_StandAloneMuonEtaVsPt->Fill(mu->eta(),mu->pt());
+   h_StandAloneMuonEtaVsPt2D->Fill(mu->eta(),mu->pt());
+
+   h_StandAloneMuonPhiVsPt->Fill(mu->phi(),mu->pt());
+   h_StandAloneMuonPhiVsPt2D->Fill(mu->phi(),mu->pt());
+
+   }
+
+   if(mu->isCaloMuon()) {
+
+    h_CaloMuonPt->Fill(mu->pt());
+    h_CaloMuonEta->Fill(mu->eta());
+    h_CaloMuonPhi->Fill(mu->phi());
+ 
+    h_CaloMuonEtaVsPt->Fill(mu->eta(),mu->pt());
+    h_CaloMuonEtaVsPt2D->Fill(mu->eta(),mu->pt());
+ 
+    h_CaloMuonPhiVsPt->Fill(mu->phi(),mu->pt());
+    h_CaloMuonPhiVsPt2D->Fill(mu->phi(),mu->pt());
+
+
+   }
+
+}
+
+// end of event Loop   
+}
+

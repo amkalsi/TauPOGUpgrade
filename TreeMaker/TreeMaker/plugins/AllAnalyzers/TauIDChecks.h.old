@@ -1,0 +1,254 @@
+#ifndef __TAUID_CHECK_H_
+#define __TAUID_CHECK_H_ 
+
+#include <memory>
+
+// user include files
+#include "FWCore/Framework/interface/Frameworkfwd.h"
+#include "FWCore/Framework/interface/EDAnalyzer.h"
+
+#include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/MakerMacros.h"
+
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/ServiceRegistry/interface/Service.h"
+#include "CommonTools/UtilAlgos/interface/TFileService.h"
+
+#include "DataFormats/PatCandidates/interface/Tau.h"
+#include "DataFormats/PatCandidates/interface/Muon.h"
+#include "DataFormats/PatCandidates/interface/Electron.h"
+#include "DataFormats/PatCandidates/interface/Jet.h"
+#include "DataFormats/PatCandidates/interface/MET.h"
+#include "DataFormats/PatCandidates/interface/CompositeCandidate.h"
+#include "DataFormats/Math/interface/LorentzVector.h"
+#include "DataFormats/Math/interface/LorentzVectorFwd.h"
+#include "DataFormats/JetReco/interface/GenJetCollection.h"
+#include "DataFormats/JetReco/interface/GenJet.h"
+#include "DataFormats/PatCandidates/interface/Isolation.h"
+#include "DataFormats/Math/interface/deltaR.h"
+#include "DataFormats/Math/interface/normalizedPhi.h"
+#include "DataFormats/TauReco/interface/PFTau.h"
+#include "DataFormats/TauReco/interface/PFTauDiscriminator.h"
+#include "DataFormats/MuonReco/interface/MuonSelectors.h"
+#include "DataFormats/Common/interface/RefVector.h"
+#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+#include "DataFormats/Candidate/interface/Candidate.h"
+#include "DataFormats/Common/interface/Ref.h"
+#include "DataFormats/Common/interface/ValueMap.h"
+#include "DataFormats/VertexReco/interface/Vertex.h"
+#include "DataFormats/VertexReco/interface/VertexFwd.h"
+#include "FWCore/Common/interface/TriggerNames.h"
+#include "CLHEP/Random/RandGauss.h"
+#include "CommonTools/CandUtils/interface/Booster.h"
+#include "DataFormats/METReco/interface/GenMET.h"
+#include "DataFormats/METReco/interface/GenMETCollection.h"
+#include <Math/VectorUtil.h>
+#include "DataFormats/HLTReco/interface/TriggerObject.h"
+#include "DataFormats/HLTReco/interface/TriggerEvent.h"
+#include "DataFormats/Common/interface/Handle.h"
+#include "DataFormats/TrackReco/interface/Track.h"
+#include "DataFormats/TrackReco/interface/HitPattern.h"
+#include "TrackingTools/TransientTrack/interface/TrackTransientTrack.h"
+#include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
+#include "TrackingTools/Records/interface/TransientTrackRecord.h"
+#include "CLHEP/Units/GlobalPhysicalConstants.h"
+#include "CommonTools/Statistics/interface/ChiSquaredProbability.h"
+#include "CondFormats/JetMETObjects/interface/FactorizedJetCorrector.h"
+#include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
+#include "JetMETCorrections/Objects/interface/JetCorrectionsRecord.h"
+#include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
+#include "DataFormats/ParticleFlowCandidate/interface/PFCandidate.h"
+#include "DataFormats/ParticleFlowCandidate/interface/PFCandidateFwd.h"
+#include "DataFormats/Common/interface/ValueMap.h"
+#include "CommonTools/ParticleFlow/test/PFIsoReaderDemo.h"
+#include "FWCore/Utilities/interface/Exception.h"
+#include "DataFormats/JetReco/interface/PFJet.h"
+#include "DataFormats/JetReco/interface/PFJetCollection.h"
+#include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
+#include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
+#include "JetMETCorrections/Objects/interface/JetCorrector.h"
+#include "JetMETCorrections/Objects/interface/JetCorrectionsRecord.h"
+
+#include "FWCore/Framework/interface/ESHandle.h"
+#include "boost/regex.hpp"
+#include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
+#include "PhysicsTools/JetMCUtils/interface/JetMCTag.h"
+#include <TH1.h>
+#include <TH2.h>
+#include <TFile.h>
+#include <TProfile.h>
+#include <TTree.h>
+#include <string>
+#include <vector>
+#include <map>
+#include <sstream>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <TRandom3.h>
+#include <TBranch.h>
+// class declaration                                                                                                                           
+//                                                                                                                                             
+using namespace std;
+using namespace edm;
+
+//
+// class declaration
+//
+
+class TauIDChecks {
+   public:
+       TauIDChecks(edm::Service<TFileService> fs, const edm::ParameterSet& cfg);
+      ~TauIDChecks();
+       void Fill(const edm::Event& iEvent);
+       void Clear();
+//      FakeRate* fakerateObj;
+
+   private:
+      TauIDChecks() {};
+      
+  // ----------member data ---------------------------
+
+  //-----do matching to gen?
+  bool _MatchTauToGen;
+  bool _UseTauMotherId;
+  bool _UseTauGrandMotherId;
+  bool _MatchLeptonToGen;
+  bool _UseLeptonMotherId;
+  bool _UseLeptonGrandMotherId;
+  int _TauMotherId;
+  int _TauGrandMotherId;
+  int _LeptonMotherId;
+  int _LeptonGrandMotherId;
+  double _TauToGenMatchingDeltaR;                                                                                                                            
+  std::vector<bool> muVetoContainer,EVetoContainer,IsoVetoContainer;
+  std::vector<reco::GenParticleRef> associatedGenParticles;
+  
+  Handle< reco::GenParticleCollection > _genParticles;
+  Handle<reco::GenJetCollection> _genJets;
+  Handle<reco::PFTauCollection> _hpsTaucoll;
+  Handle<reco::PFTauDiscriminator> _hpsTau,_hpsTau1,_hpsTau2,_hpsTau3,_chargedIsoPtSum,_neutralIsoPtSum,_pucorrPtSum,_rawCharged;
+  
+  pair<bool, reco::Candidate::LorentzVector> matchToGen(const pat::Tau& theObject); 
+  pair<bool, reco::Candidate::LorentzVector> matchTauToGenMuon(const pat::Tau& theObject);
+  pair<bool, reco::Candidate::LorentzVector> matchTauToGenElectron(const pat::Tau& theObject);
+  pair<bool, reco::Candidate::LorentzVector> matchTauToGenJet(const pat::Tau& theObject);
+  //  bool MatchingWithPFTau(const patTau& theObject);
+
+  reco::Candidate::LorentzVector MChadtau;
+  const reco::Candidate * daughterCand;  
+  const reco::Candidate * motherCand;
+  const reco::Candidate * grandMotherCand;
+
+  //  double hpsLooseCombined3HitsFromPtSums1;
+  double hpsLooseCombined3HitsFromPtSums;  
+  // vector<string> muVeto, EVeto, IsoVeto;
+
+ TH1F  *TrackPt;
+ TH1F  *TrackEta;
+ TH1F  *TrackPhi;
+ TH1F  *JetPt;
+ TH1F  *GenTauPtWithoutDMF;
+ TH1F  *GenTauEtaWithoutDMF;
+ TH1F  *GenTauPhiWithoutDMF;
+
+ TH1F  *GenTauPtWithDMF;
+ TH1F  *GenTauEtaWithDMF;
+ TH1F  *GenTauPhiWithDMF;
+
+ TH1F  *GenTauPtWithDMF_ML2;
+ TH1F  *GenTauEtaWithDMF_ML2;
+ TH1F  *GenTauPhiWithDMF_ML2;
+
+ TH1F  *GenTauPtWithDMF_MM2;
+ TH1F  *GenTauEtaWithDMF_MM2;
+ TH1F  *GenTauPhiWithDMF_MM2;
+
+ TH1F  *GenTauPtWithDMF_MT2;
+ TH1F  *GenTauEtaWithDMF_MT2;
+ TH1F  *GenTauPhiWithDMF_MT2;
+
+  TH1F  *GenTauPtWithDMF_ML3;
+  TH1F  *GenTauEtaWithDMF_ML3;
+  TH1F  *GenTauPhiWithDMF_ML3;
+
+  TH1F  *GenTauPtWithDMF_MT3;
+  TH1F  *GenTauEtaWithDMF_MT3;
+  TH1F  *GenTauPhiWithDMF_MT3;
+
+  TH1F  *GenTauPtWithDMF_EL3;
+  TH1F  *GenTauEtaWithDMF_EL3;
+  TH1F  *GenTauPhiWithDMF_EL3;
+                     
+  TH1F  *GenTauPtWithDMF_EM3;
+  TH1F  *GenTauEtaWithDMF_EM3; 
+  TH1F  *GenTauPhiWithDMF_EM3; 
+                     
+  TH1F  *GenTauPtWithDMF_ET3;
+  TH1F  *GenTauEtaWithDMF_ET3;
+  TH1F  *GenTauPhiWithDMF_ET3; // constants, enums and typedefs
+
+  TH1F  *GenTauPtWithDMF_LIso3Hits; 
+  TH1F  *GenTauEtaWithDMF_LIso3Hits;
+  TH1F  *GenTauPhiWithDMF_LIso3Hits;
+                           
+  TH1F  *GenTauPtWithDMF_MIso3Hits; 
+  TH1F  *GenTauEtaWithDMF_MIso3Hits;
+  TH1F  *GenTauPhiWithDMF_MIso3Hits;
+                           
+  TH1F  *GenTauPtWithDMF_TIso3Hits; 
+  TH1F  *GenTauEtaWithDMF_TIso3Hits;
+  TH1F  *GenTauPhiWithDMF_TIso3Hits;
+
+  TH1F  *GenTauPtWithDMF_LIso; 
+  TH1F  *GenTauEtaWithDMF_LIso;
+  TH1F  *GenTauPhiWithDMF_LIso;
+                           
+  TH1F  *GenTauPtWithDMF_MIso; 
+  TH1F  *GenTauEtaWithDMF_MIso;
+  TH1F  *GenTauPhiWithDMF_MIso;
+                           
+  TH1F  *GenTauPtWithDMF_TIso; 
+  TH1F  *GenTauEtaWithDMF_TIso;
+  TH1F  *GenTauPhiWithDMF_TIso;
+
+  TH1F  *GenTauPtWithDMF_VLChar; 
+  TH1F  *GenTauEtaWithDMF_VLChar;
+  TH1F  *GenTauPhiWithDMF_VLChar;
+ 
+  TH1F  *GenTauPtWithDMF_LChar; 
+  TH1F  *GenTauEtaWithDMF_LChar;
+  TH1F  *GenTauPhiWithDMF_LChar;
+                           
+  TH1F  *GenTauPtWithDMF_MChar;
+  TH1F  *GenTauEtaWithDMF_MChar;
+  TH1F  *GenTauPhiWithDMF_MChar;
+                           
+  TH1F  *GenTauPtWithDMF_TChar; 
+  TH1F  *GenTauEtaWithDMF_TChar;
+  TH1F  *GenTauPhiWithDMF_TChar;
+
+  TProfile *ChargedIsoSumPtGenTauPtMuonElectron;
+  TProfile *ChargedIsoSumPtGenTauEtaMuonElectron;
+  TProfile *ChargedIsoSumPtGenTauPhiMuonElectron;
+
+  TProfile *NeutralIsoSumPtGenTauPtMuonElectron;
+  TProfile *NeutralIsoSumPtGenTauEtaMuonElectron;
+  TProfile *NeutralIsoSumPtGenTauPhiMuonElectron;
+
+  TProfile *PUcorrSumPtGenTauPtMuonElectron;
+  TProfile *PUcorrSumPtGenTauEtaMuonElectron;
+  TProfile *PUcorrSumPtGenTauPhiMuonElectron;
+
+  TH2F *CorrelationPlots;
+//
+
+//
+// static data member definitions
+//
+
+//
+// constructors and destructor
+};
+
+#endif
